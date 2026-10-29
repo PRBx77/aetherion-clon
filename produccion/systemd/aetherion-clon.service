@@ -1,0 +1,21 @@
+[Unit]
+Description=Aetherion Diseño (aetherion-clon) — web
+After=network.target
+
+[Service]
+User=aetherion-clon
+Group=aetherion-clon
+EnvironmentFile=/opt/aetherion-clon/.env
+WorkingDirectory=/opt/aetherion-clon/web
+ExecStart=/opt/aetherion-clon/venv/bin/gunicorn --workers 2 --threads 4 --timeout 300 --bind 127.0.0.1:8200 --access-logfile - app:app
+Restart=always
+RestartSec=5
+MemoryMax=600M
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+ReadWritePaths=/opt/aetherion-clon/data
+
+[Install]
+WantedBy=multi-user.target

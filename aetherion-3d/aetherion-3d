@@ -1,0 +1,96 @@
+#!/usr/bin/env bash
+# Aetherion 3D en el escritorio del X99: describe una pieza y obtén el STL listo para imprimir.
+MOTOR=/mnt/nv/ia/aetherion-3d/modelar3d.py
+DESTINO="$HOME/Proyectos/3D"
+export AETH_LLM_3D="${AETH_LLM_3D:-http://127.0.0.1:8082}"     # tu IA personal
+mkdir -p "$DESTINO"
+ULTIMA=""
+
+c() { printf "\033[%sm%s\033[0m" "$1" "$2"; }
+linea() { printf '%.0s─' {1..60}; echo; }
+
+asegurar_ia() {
+  if ! curl -fsS "${AETH_LLM_3D}/health" 2>/dev/null | grep -q ok; then
+    echo; c "1;33" "La IA no está cargada: arrancándola (1–3 min)…"; echo
+    ia.sh personal || { c "1;31" "No se pudo arrancar la IA"; echo; return 1; }
+  fi
+}
+
+nombre_carpeta() {
+  local t; t=$(echo "$1" | iconv -f utf-8 -t ascii//TRANSLIT 2>/dev/null | tr -cs 'A-Za-z0-9' '-' | cut -c1-40 | sed 's/-$//')
+  echo "$DESTINO/$(date +%Y%m%d-%H%M)-${t:-pieza}"
+}
+
+mostrar() {
+  local d=$1
+  echo; linea
+  if [[ -f "$d/resultado.json" ]]; then
+    python3 - "$d/resultado.json" <<'EOF'
+import json, sys
+r = json.load(open(sys.argv[1]))
+x, y, z = r["medidas_mm"]
+print(f"  ✅ Pieza lista en {r['segundos']} s  ·  {x} × {y} × {z} mm  ·  {r['volumen_cm3']} cm³ (~{round(r['volumen_cm3']*1.24)} g de PLA)")
+piezas = r.get("piezas") or []
+if len(piezas) > 1:
+    for i, (a, b, c) in enumerate(piezas, 1): print(f"     pieza {i}: {a} × {b} × {c} mm")
+for a in r.get("avisos", []): print("  ⚠️ ", a)
+EOF
+  fi
+  echo "  Carpeta: $d"
+  linea
+  [[ -f "$d/vista.png" ]] && (xdg-open "$d/vista.png" >/dev/null 2>&1 &)
+  while true; do
+    echo "  [o] Abrir en OpenSCAD (ver en 3D y editar medidas)   [c] Abrir la carpeta   [Enter] Volver al menú"
+    read -r -p "  > " r
+    case "$r" in
+      o|O) (openscad "$d/modelo.scad" >/dev/null 2>&1 &) ;;
+      c|C) (xdg-open "$d" >/dev/null 2>&1 &) ;;
+      *) break ;;
+    esac
+  done
+}
+
+disenar() {   # $1 = texto, $2 = carpeta, $3 = scad previo (opcional), $4 = descripción original (opcional)
+  asegurar_ia || return
+  echo; c "1;36" "Diseñando… (con tu IA actual tarda unos 5–10 min; puedes dejar esta ventana abierta)"; echo
+  local args=(--texto "$1" --salida "$2"); [[ -n "$3" ]] && args+=(--previo "$3"); [[ -n "$4" ]] && args+=(--original "$4")
+  if python3 "$MOTOR" "${args[@]}"; then
+    ULTIMA="$2"; mostrar "$2"
+  else
+    echo; c "1;31" "No se ha podido diseñar. Prueba a describirla de otra forma."; echo
+  fi
+}
+
+ULTIMA=$(ls -dt "$DESTINO"/*/ 2>/dev/null | head -1); ULTIMA=${ULTIMA%/}
+while true; do
+  clear
+  c "1;36" "  ◆ AETHERION 3D"; echo "  — de una descripción a una pieza imprimible (STL)"
+  linea
+  echo "  1) Nueva pieza"
+  [[ -n "$ULTIMA" ]] && echo "  2) Retocar la última:  $(basename "$ULTIMA")"
+  echo "  3) Ver mis piezas (carpeta Proyectos/3D)"
+  echo "  4) Salir"
+  linea
+  echo "  Consejo: da medidas en mm y di para qué sirve. Ej.: «caja con tapa de 80×50×30 mm para tornillos»"
+  read -r -p "  Elige: " op
+  case "$op" in
+    1)
+      echo; read -e -r -p "  Describe la pieza: " texto
+      [[ -z "$texto" ]] && continue
+      disenar "$texto" "$(nombre_carpeta "$texto")"
+      ;;
+    2)
+      [[ -z "$ULTIMA" ]] && continue
+      original=""
+      if [[ ! -f "$ULTIMA/descripcion.txt" ]]; then
+        echo; echo "  Esta pieza es de una versión anterior y no guardó su descripción."
+        read -e -r -p "  ¿Qué era la pieza? (ej.: maceta hexagonal con plato separado): " original
+      fi
+      echo; read -e -r -p "  ¿Qué quieres cambiar? " cambio
+      [[ -z "$cambio" ]] && continue
+      disenar "$cambio" "$(nombre_carpeta "$(basename "$ULTIMA" | cut -c15-)-retoque")" "$ULTIMA/modelo.scad" "$original"
+      ;;
+    3) (xdg-open "$DESTINO" >/dev/null 2>&1 &) ;;
+    4|q|Q) exit 0 ;;
+  esac
+done

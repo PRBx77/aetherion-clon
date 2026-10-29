@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
+<title>Aether · Aetherion</title>
+<meta name="theme-color" content="#070b12">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Aether">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="{{ url_for('asistente_manifest') }}">
+<link rel="icon" href="{{ url_for('static', filename='asistente/icono-192.png') }}">
+<link rel="apple-touch-icon" href="{{ url_for('static', filename='asistente/icono-180.png') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='asistente/asistente.css') }}">
+</head>
+<body data-csrf="{{ csrf() }}" data-usuario="{{ u.nombre }}">
+<header class="barra">
+  <div class="logo"><span class="gema">◆</span> Aether</div>
+  <button class="oido" id="oido" type="button" hidden aria-pressed="false" title="Manos libres: di «Aether escucha»">
+    <span class="punto"></span><span id="oido-txt">Manos libres</span>
+  </button>
+</header>
+
+<main>
+  <!-- ─────────── Chat ─────────── -->
+  <section class="vista activa" id="v-chat">
+    <div class="mensajes" id="mensajes" aria-live="polite"></div>
+    <div class="aviso-escucha" id="escuchando" hidden>Te escucho…</div>
+    <form class="entrada" id="f-chat" autocomplete="off">
+      <button class="mic" id="mic" type="button" hidden aria-label="Hablar">🎙</button>
+      <textarea id="texto" rows="1" maxlength="2000" placeholder="Escribe o pulsa el micro…" enterkeyhint="send"></textarea>
+      <button class="enviar" id="enviar" aria-label="Enviar">➤</button>
+    </form>
+  </section>
+
+  <!-- ─────────── Notas ─────────── -->
+  <section class="vista" id="v-notas">
+    <h2>Notas</h2>
+    <form class="alta" id="f-nota"><input id="nota-txt" maxlength="1000" placeholder="Nueva nota…"><button class="boton">Añadir</button></form>
+    <ul class="lista" id="l-notas"></ul>
+  </section>
+
+  <!-- ─────────── Recordatorios ─────────── -->
+  <section class="vista" id="v-avisos">
+    <h2>Recordatorios</h2>
+    <form class="alta dos" id="f-aviso">
+      <input id="aviso-txt" maxlength="300" placeholder="¿Qué te recuerdo?" required>
+      <input id="aviso-fecha" type="datetime-local" required>
+      <button class="boton">Añadir</button>
+    </form>
+    <p class="nota" id="nota-avisos"></p>
+    <ul class="lista" id="l-avisos"></ul>
+  </section>
+
+  <!-- ─────────── Datos ─────────── -->
+  <section class="vista" id="v-datos">
+    <h2>Archivos de datos</h2>
+    <p class="nota">Dile a Aether «guarda en <i>medidas motor</i>: cilindro 1 a 12,4 bar» y aquí se va formando el archivo. Luego pregúntale por esos datos.</p>
+    <div id="l-datos"></div>
+  </section>
+
+  <!-- ─────────── Ajustes ─────────── -->
+  <section class="vista" id="v-ajustes">
+    <h2>Ajustes</h2>
+    <div class="grupo">
+      <label class="check"><input type="checkbox" id="aj-voz"> Responder también en voz alta</label>
+      <label>Voz<select id="aj-voz-nombre"></select></label>
+      <label class="check"><input type="checkbox" id="aj-manos"> Activar «manos libres» al abrir la app</label>
+      <button class="boton sec" type="button" id="aj-avisos">🔔 Activar avisos en este móvil</button>
+      <button class="boton sec" type="button" id="aj-instalar" hidden>📲 Instalar Aether en el móvil</button>
+      <p class="nota" id="aj-instalar-ios" hidden>Para instalarla en iPhone: botón <b>Compartir</b> → <b>Añadir a pantalla de inicio</b>.</p>
+    </div>
+    <div class="grupo">
+      <h3>Tus datos</h3>
+      <p class="nota">Todo lo que guardas (chat, notas, recordatorios y archivos) está <b>solo en este móvil</b>. Aetherion no lo guarda: cada pregunta pasa por el motor, se responde y se borra. Si cambias de móvil o borras los datos del navegador se pierde, así que haz copias.</p>
+      <p class="nota" id="aj-uso"></p>
+      <label>Contraseña de la copia <small>(opcional pero recomendada: sin ella la copia queda legible)</small>
+        <input type="password" id="aj-clave" autocomplete="new-password" placeholder="Contraseña para cifrar"></label>
+      <div class="botones">
+        <button class="boton" type="button" id="aj-exportar">⬇ Guardar copia</button>
+        <label class="boton sec archivo">⬆ Recuperar copia<input type="file" id="aj-importar" accept=".aether,application/json"></label>
+      </div>
+      <button class="boton peligro" type="button" id="aj-borrar">Borrar todos mis datos de este móvil</button>
+    </div>
+    <div class="grupo">
+      <p class="nota">Cuenta: <b>{{ u.nombre }}</b> · <a href="{{ url_for('panel') }}">Aetherion Diseño</a> · <a href="{{ url_for('pagina_3d') }}">Aetherion 3D</a> · <a href="{{ url_for('condiciones') }}">Condiciones</a></p>
+      <p class="nota">Para comprobar los datos importantes (medidas, referencias, citas) no te fíes solo de la IA: puede equivocarse.</p>
+    </div>
+  </section>
+</main>
+
+<nav class="pestanas" id="pestanas">
+  <button data-v="chat" class="activa">💬<span>Chat</span></button>
+  <button data-v="notas">📝<span>Notas</span></button>
+  <button data-v="avisos">⏰<span>Avisos</span><b class="globo" id="globo-avisos" hidden></b></button>
+  <button data-v="datos">📁<span>Datos</span></button>
+  <button data-v="ajustes">⚙️<span>Ajustes</span></button>
+</nav>
+<div class="tostada" id="tostada" hidden></div>
+<script src="{{ url_for('static', filename='asistente/asistente.js') }}"></script>
+</body>
+</html>

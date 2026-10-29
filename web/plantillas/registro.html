@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block titulo %}Crear cuenta · Aetherion Diseño{% endblock %}
+{% block nav %}<a href="{{ url_for('entrar') }}">Entrar</a>{% endblock %}
+{% block cuerpo %}
+<form class="tarjeta formulario" method="post">
+  <h2>Crear cuenta</h2>
+  {% if error %}<p class="error">{{ error }}</p>{% endif %}
+  <input type="hidden" name="csrf" value="{{ csrf() }}">
+  <label>Código de invitación
+    <input name="codigo" value="{{ request.form.codigo or codigo }}" placeholder="AETH-XXXX-XXXX-XXXX" required autocomplete="off" spellcheck="false"></label>
+  <label>Nombre de usuario
+    <input name="nombre" value="{{ request.form.nombre or '' }}" minlength="3" maxlength="24" required autocomplete="username"></label>
+  <label>Contraseña <small>(mínimo 10 caracteres)</small>
+    <input type="password" name="clave" minlength="10" required autocomplete="new-password"></label>
+  <label>Repite la contraseña
+    <input type="password" name="clave2" minlength="10" required autocomplete="new-password"></label>
+  <label class="check"><input type="checkbox" name="acepto" value="1" required>
+    He leído y acepto las <a href="{{ url_for('condiciones') }}" target="_blank">condiciones de uso</a>.</label>
+  <button class="boton">Crear cuenta</button>
+  <p class="nota">No pedimos email. Guarda bien tu contraseña.</p>
+</form>
+{% endblock %}

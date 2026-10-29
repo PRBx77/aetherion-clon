@@ -1,0 +1,35 @@
+AETHERION DISEÑO — instalación en el VPS de DiamondWall (TU_DOMINIO.ejemplo.com)
+=============================================================================================
+
+0) Hetzner: haz un SNAPSHOT del VPS (único rollback total).
+
+1) Cloudflare → DNS → Records → Add record:
+     Tipo CNAME · Nombre aetherion-clon · Destino TU-TUNNEL-UUID-AQUI.cfargotunnel.com · Proxied (naranja)
+
+2) ProBook:
+     scp ~/Descargas/aetherion-produccion.tar.gz tu-servidor:
+     ssh tu-servidor
+     tar xzf aetherion-produccion.tar.gz && bash aetherion/despliegue/instalar-vps-compartido.sh
+   → Muestra la CLAVE DEL WORKER y tu primera invitación.
+   → Regístrate en https://TU_DOMINIO.ejemplo.com y luego en el VPS:
+        aetherion-clon-admin hacer-admin TU_USUARIO
+
+3) X99 — la IA oficial para Aetherion 3D (una vez, ~16 GB):
+     docker run --rm --user $(id -u):$(id -g) -e HOME=/tmp -v /mnt/nv/ia/llm:/m clonar:chatterbox \
+       hf download bartowski/Qwen3.8-27B-GGUF --include "Qwen3.8-27B-IQ4_XS.gguf" "mmproj-Qwen3.8-27B-f16.gguf" --local-dir /m
+
+4) X99 — el worker como servicio:
+     tar xzf aetherion-produccion.tar.gz
+     sudo bash aetherion/despliegue/instalar-worker.sh https://TU_DOMINIO.ejemplo.com CLAVE_DEL_WORKER
+
+Actualizar más adelante: vuelve a ejecutar el mismo instalador con el paquete nuevo
+(conserva base de datos, claves, usuarios y archivos).
+
+──────────────────────────────────────────────────────────────
+5) AETHER (asistente personal) — actualizar una instalación existente
+──────────────────────────────────────────────────────────────
+ VPS (root):   bash aetherion/despliegue/actualizar-web.sh
+ X99:          ia-asistente.sh descargar        (modelo pequeño, ~3 GB, una vez)
+               y volver a ejecutar instalar-worker.sh (paso 4) para el worker nuevo.
+ Móvil:        https://TU_DOMINIO.ejemplo.com/asistente → Instalar / Añadir a pantalla de inicio.
+ Los datos del asistente viven en el móvil de cada usuario; el servidor no los guarda.

@@ -1,0 +1,34 @@
+# Datos y runtime
+datos/
+data/
+archivos/
+voces/
+piezas/
+*.db
+*.sqlite*
+*.wav
+*.mp3
+*.mp4
+*.stl
+*.ply
+*.obj
+
+# Secretos
+.env
+.env.*
+*.key
+*.pem
+id_rsa*
+*.secret
+secretos/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+venv/
+.venv/
+
+# SO
+.DS_Store
+Thumbs.db

@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block nav %}<a href="{{ url_for('entrar') }}">Entrar</a>{% endblock %}
+{% block cuerpo %}
+<section class="portada">
+  <h1>Da vida a una foto.</h1>
+  <p class="sub">Sube un retrato, escribe lo que quieres que diga y Aetherion lo convierte en un vídeo que habla, con tu propia voz si quieres.</p>
+  <p class="sub">Y con <b>Aetherion 3D</b>, describe un objeto y descarga la pieza lista para tu impresora 3D.</p>
+  <p class="sub">Y <b>Aether</b>, tu asistente personal por voz: notas, recordatorios y cálculos, con tus datos guardados solo en tu móvil.</p>
+  <div class="acciones">
+    <a class="boton" href="{{ url_for('registro') }}">Tengo una invitación</a>
+    <a class="boton sec" href="{{ url_for('entrar') }}">Ya tengo cuenta</a>
+  </div>
+  <p class="nota">Acceso por invitación durante la beta.</p>
+</section>
+{% endblock %}

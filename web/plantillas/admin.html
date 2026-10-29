@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+{% block titulo %}Administración · Aetherion Diseño{% endblock %}
+{% block nav %}
+  <a href="{{ url_for('panel') }}">← Mi panel</a>
+  <span class="usuario">{{ u.nombre }} (admin)</span>
+{% endblock %}
+{% block cuerpo %}
+<div class="admin">
+  {% for a in avisos %}<p class="aviso">{{ a }}</p>{% endfor %}
+
+  <section class="resumen">
+    <div class="tarjeta dato"><b>{{ usuarios|length }}</b><span>usuarios</span></div>
+    <div class="tarjeta dato"><b>{{ stats.total or 0 }}</b><span>vídeos pedidos</span></div>
+    <div class="tarjeta dato"><b>{{ stats.hechos or 0 }}</b><span>terminados</span></div>
+    <div class="tarjeta dato"><b>{{ stats.errores or 0 }}</b><span>con error</span></div>
+    <div class="tarjeta dato"><b>{{ cola|length }}</b><span>en cola ahora</span></div>
+  </section>
+
+  <section class="tarjeta" id="invitaciones">
+    <h2>Invitaciones</h2>
+    <form method="post" action="{{ url_for('admin_invitar') }}" class="fila-form">
+      <input type="hidden" name="csrf" value="{{ csrf() }}">
+      <label>Nivel <select name="nivel">{% for k, v in niveles.items() %}<option value="{{ k }}">{{ v }}</option>{% endfor %}</select></label>
+      <label>Créditos <input type="number" name="creditos" value="10" min="0" max="1000"></label>
+      <label>Caduca (días) <input type="number" name="dias" value="14" min="1" max="365"></label>
+      <label>Cantidad <input type="number" name="cantidad" value="1" min="1" max="20"></label>
+      <label class="ancho">Nota <input name="nota" maxlength="60" placeholder="Para quién es"></label>
+      <button class="boton">Crear</button>
+    </form>
+    <div class="tabla">
+      <table>
+        <tr><th>Código</th><th>Nivel</th><th>Créditos</th><th>Caduca</th><th>Estado</th><th>Nota</th><th></th></tr>
+        {% for i in invitaciones %}
+        {% set libre = not i.usado_por and not i.revocada and i.caduca > ahora %}
+        <tr>
+          <td><code class="seleccionable">{{ i.codigo }}</code>{% if libre %}<br><small class="nota seleccionable">{{ request.host_url }}registro?codigo={{ i.codigo }}</small>{% endif %}</td>
+          <td>{{ niveles[i.nivel] }}</td><td>{{ i.creditos }}</td><td>{{ fecha(i.caduca) }}</td>
+          <td>{% if i.revocada %}<span class="estado error">Revocada</span>{% elif i.usado_por %}Usada por <b>{{ i.usuario }}</b>{% elif i.caduca < ahora %}<span class="estado error">Caducada</span>{% else %}<span class="estado lista">Libre</span>{% endif %}</td>
+          <td>{{ i.nota or "" }}</td>
+          <td>{% if libre %}<form method="post" action="{{ url_for('admin_revocar', codigo=i.codigo) }}"><input type="hidden" name="csrf" value="{{ csrf() }}"><button class="enlace">Revocar</button></form>{% endif %}</td>
+        </tr>
+        {% else %}<tr><td colspan="7" class="nota">No hay invitaciones.</td></tr>{% endfor %}
+      </table>
+    </div>
+  </section>
+
+  <section class="tarjeta" id="usuarios">
+    <h2>Usuarios</h2>
+    <div class="tabla">
+      <table>
+        <tr><th>Usuario</th><th>Nivel</th><th>Créditos</th><th>Vídeos</th><th>Alta</th><th>Estado</th></tr>
+        {% for x in usuarios %}
+        <tr>
+          <td><b>{{ x.nombre }}</b>{% if x.admin %} <small class="nota">admin</small>{% endif %}</td>
+          <td><form method="post" action="{{ url_for('admin_usuario', uid=x.id, accion='nivel') }}" class="enlinea-form">
+              <input type="hidden" name="csrf" value="{{ csrf() }}">
+              <select name="nivel">{% for k, v in niveles.items() %}<option value="{{ k }}"{{ ' selected' if k == x.nivel }}>{{ v }}</option>{% endfor %}</select>
+              <button class="enlace">OK</button></form></td>
+          <td><form method="post" action="{{ url_for('admin_usuario', uid=x.id, accion='creditos') }}" class="enlinea-form">
+              <input type="hidden" name="csrf" value="{{ csrf() }}">
+              <b>{{ x.creditos }}</b> <input type="number" name="cambio" value="10" class="corto">
+              <button class="enlace">Sumar</button></form></td>
+          <td>{{ x.n_trabajos }}</td><td>{{ fecha(x.creado) }}</td>
+          <td>{% if x.id != u.id %}<form method="post" action="{{ url_for('admin_usuario', uid=x.id, accion='desbloquear' if not x.activo else 'bloquear') }}">
+              <input type="hidden" name="csrf" value="{{ csrf() }}">
+              {% if x.activo %}<span class="estado lista">Activo</span> <button class="enlace">Bloquear</button>{% else %}<span class="estado error">Bloqueado</span> <button class="enlace">Desbloquear</button>{% endif %}
+              </form>{% else %}<span class="estado lista">Tú</span>{% endif %}</td>
+        </tr>
+        {% endfor %}
+      </table>
+    </div>
+    <p class="nota">Para quitar créditos, pon un número negativo (por ejemplo −5).</p>
+  </section>
+
+  <section class="tarjeta" id="voces">
+    <h2>Voces clonadas</h2>
+    <p class="nota">Las voces se pueden usar al momento. Aquí puedes revisar la grabación y rechazar las que no correspondan a su dueño.</p>
+    <div class="tabla">
+      <table>
+        <tr><th>Usuario</th><th>Voz</th><th>Frase que debía leer</th><th>Grabación</th><th>Estado</th><th></th></tr>
+        {% for v in voces %}
+        <tr>
+          <td>{{ v.usuario }}</td><td>{{ v.nombre }}<br><small class="nota">{{ fecha(v.creado) }}</small></td>
+          <td class="frase-celda">{{ v.frase }}</td>
+          <td><audio controls preload="none" src="{{ url_for('admin_muestra', vid=v.id) }}"></audio></td>
+          <td><span class="estado {{ v.estado }}">{{ {'lista': 'Activa', 'pendiente': 'Pendiente', 'rechazada': 'Rechazada'}[v.estado] }}</span>{% if v.nota %}<br><small class="nota">{{ v.nota }}</small>{% endif %}</td>
+          <td>
+            {% if v.estado != 'lista' %}<form method="post" action="{{ url_for('admin_voz', vid=v.id, accion='aprobar') }}"><input type="hidden" name="csrf" value="{{ csrf() }}"><button class="enlace">Activar</button></form>{% endif %}
+            {% if v.estado != 'rechazada' %}<form method="post" action="{{ url_for('admin_voz', vid=v.id, accion='rechazar') }}" class="enlinea-form"><input type="hidden" name="csrf" value="{{ csrf() }}"><input name="motivo" placeholder="Motivo" class="corto"><button class="enlace">Rechazar</button></form>{% endif %}
+          </td>
+        </tr>
+        {% else %}<tr><td colspan="6" class="nota">Nadie ha clonado su voz todavía.</td></tr>{% endfor %}
+      </table>
+    </div>
+  </section>
+
+  <section class="tarjeta" id="cola">
+    <h2>Cola de trabajos</h2>
+    <div class="tabla">
+      <table>
+        <tr><th>Trabajo</th><th>Usuario</th><th>Estado</th><th>Calidad</th><th>Voz</th><th>Pedido</th></tr>
+        {% for t in cola %}
+        <tr><td><code>{{ t.id }}</code></td><td>{{ t.usuario }}</td>
+          <td>{{ 'En cola' if t.estado == 'cola' else (t.fase or 'Procesando') ~ ' ' ~ t.progreso ~ '%' }}</td>
+          <td>{{ t.calidad }}</td><td>{{ 'Clonada' if t.voz.startswith('clon:') else t.voz }}</td><td>{{ fecha(t.creado) }}</td></tr>
+        {% else %}<tr><td colspan="6" class="nota">Cola vacía.</td></tr>{% endfor %}
+      </table>
+    </div>
+  </section>
+</div>
+{% endblock %}

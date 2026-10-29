@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block titulo %}Aetherion 3D{% endblock %}
+{% block nav %}
+  <a href="{{ url_for('panel') }}">Avatar</a>
+  <a href="{{ url_for('pagina_3d') }}" class="activo">3D</a>
+  <a href="{{ url_for('pagina_asistente') }}">Aether</a>
+  <span class="insignia {{ u.nivel }}">{{ niveles[u.nivel] }}</span>
+  <span class="creditos"><b id="creditos">{{ u.creditos }}</b> créditos</span>
+  <span class="usuario">{{ u.nombre }}</span>
+  {% if u.admin %}<a href="{{ url_for('admin') }}">Administración</a>{% endif %}
+  <form method="post" action="{{ url_for('salir') }}" class="enlinea"><input type="hidden" name="csrf" value="{{ csrf() }}"><button class="enlace">Salir</button></form>
+{% endblock %}
+{% block cuerpo %}
+<div class="panel3d" id="app3d" data-csrf="{{ csrf() }}">
+  <section class="tarjeta formulario" id="col-form">
+    <h2>Diseña una pieza</h2>
+    <form id="nueva" class="formulario">
+      <label>Describe el objeto <small id="contador">0 / {{ max_texto }}</small>
+        <textarea name="texto" id="texto" maxlength="{{ max_texto }}" rows="6" required
+          placeholder="Ejemplo: caja con tapa deslizante de 80 × 50 × 30 mm, paredes de 2 mm, con mi nombre en la tapa"></textarea></label>
+      <div class="ejemplos" id="ejemplos">
+        <button type="button" class="chip">Soporte de pared para móvil de 75 mm con hueco para el cable</button>
+        <button type="button" class="chip">Maceta hexagonal de 100 mm con agujero de drenaje</button>
+        <button type="button" class="chip">Organizador de escritorio con 3 compartimentos para bolígrafos</button>
+        <button type="button" class="chip">Gancho para colgar en una puerta de 40 mm de grosor</button>
+      </div>
+      <button class="boton" id="enviar">Diseñar pieza · {{ coste }} crédito{{ 's' if coste > 1 }}</button>
+      <p class="error" id="error" hidden></p>
+      <p class="nota">Funciona mejor con piezas funcionales y geométricas (soportes, cajas, adaptadores, ganchos). Da medidas en milímetros cuando las sepas. El archivo STL vale para cualquier impresora de filamento.</p>
+    </form>
+  </section>
+
+  <section class="tarjeta visor-tarjeta">
+    <div class="visor-cabecera">
+      <h2 id="visor-titulo">Vista 3D</h2>
+      <span class="nota" id="visor-medidas"></span>
+    </div>
+    <div class="visor" id="visor"><p class="nota visor-vacio" id="visor-vacio">Elige o diseña una pieza para verla aquí. Arrastra para girar, rueda para acercar.</p></div>
+    <ul class="avisos3d" id="avisos"></ul>
+    <div class="acciones3d" id="acciones" hidden>
+      <a class="boton" id="desc-stl" href="#">⬇ Descargar STL</a>
+      <a class="boton sec" id="desc-scad" href="#">Código OpenSCAD</a>
+    </div>
+    <form id="retocar" class="formulario retocar" hidden>
+      <label>Retocar esta pieza <input name="texto" id="texto-retoque" maxlength="{{ max_texto }}" placeholder="Ejemplo: hazla 2 cm más alta y añade dos agujeros para tornillo M4" required></label>
+      <button class="boton sec">Aplicar cambios · {{ coste }} crédito{{ 's' if coste > 1 }}</button>
+    </form>
+  </section>
+
+  <section class="tarjeta lista3d">
+    <h2>Mis piezas</h2>
+    <ul id="piezas" class="trabajos"><li class="nota">Cargando…</li></ul>
+  </section>
+</div>
+<script type="module" src="{{ url_for('static', filename='3d/app3d.js') }}"></script>
+{% endblock %}

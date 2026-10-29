@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% block titulo %}Panel · Aetherion Diseño{% endblock %}
+{% block nav %}
+  <a href="{{ url_for('panel') }}" class="activo">Avatar</a>
+  <a href="{{ url_for('pagina_3d') }}">3D</a>
+  <a href="{{ url_for('pagina_asistente') }}">Aether</a>
+  <span class="insignia {{ u.nivel }}">{{ niveles[u.nivel] }}</span>
+  <span class="creditos"><b id="creditos">{{ u.creditos }}</b> créditos</span>
+  <span class="usuario">{{ u.nombre }}</span>
+  {% if u.admin %}<a href="{{ url_for('admin') }}">Administración</a>{% endif %}
+  <form method="post" action="{{ url_for('salir') }}" class="enlinea"><input type="hidden" name="csrf" value="{{ csrf() }}"><button class="enlace">Salir</button></form>
+{% endblock %}
+{% block cuerpo %}
+<div class="panel" data-csrf="{{ csrf() }}">
+  <form id="nuevo" class="tarjeta formulario">
+    <h2>Nuevo avatar</h2>
+    <label class="foto" id="zona-foto">
+      <input type="file" name="foto" id="foto" accept="image/jpeg,image/png,image/webp" required>
+      <img id="vista" alt="" hidden>
+      <span id="foto-texto">Elige un retrato<br><small>Cara de frente, buena luz. JPG/PNG, máx. 8 MB.</small></span>
+    </label>
+    <label>Texto <small id="contador">0 / {{ max_guion }}</small>
+      <textarea name="guion" id="guion" maxlength="{{ max_guion }}" rows="5" required placeholder="Hola, soy…"></textarea></label>
+    <div class="fila">
+      <label>Idioma
+        <select name="idioma" id="idioma">{% for k, v in idiomas.items() %}<option value="{{ k }}">{{ v }}</option>{% endfor %}</select></label>
+      <label>Voz
+        <select name="voz" id="voz">
+          <optgroup label="Voces de Aetherion" id="voces-casa">{% for k, v in voces.items() %}<option value="{{ k }}" data-idioma="{{ v[0] }}">{{ v[1] }}</option>{% endfor %}</optgroup>
+          <optgroup label="Mis voces clonadas (+{{ coste_clon }} crédito)" id="voces-clon" hidden></optgroup>
+        </select></label>
+    </div>
+    <div class="fila">
+      <label>Calidad
+        <select name="calidad">{% for k, v in calidades.items() %}<option value="{{ k }}">{{ v[0] }} · {{ v[1] }} crédito{{ 's' if v[1] > 1 }}</option>{% endfor %}</select></label>
+      <label>Ritmo
+        <select name="ritmo">{% for k, v in ritmos.items() %}<option value="{{ k }}"{{ ' selected' if k == 'normal' }}>{{ v[0] }}</option>{% endfor %}</select></label>
+    </div>
+    <label id="fila-expresividad" hidden>Expresividad de la voz
+      <select name="expresividad">{% for k, v in expresividad.items() %}<option value="{{ k }}"{{ ' selected' if k == 'normal' }}>{{ v[0] }}</option>{% endfor %}</select></label>
+    <label class="check"><input type="checkbox" name="consentimiento" value="1" required>
+      La persona de la foto soy yo o me ha dado su consentimiento.</label>
+    <button class="boton" id="enviar">Generar vídeo</button>
+    <p class="error" id="error" hidden></p>
+  </form>
+
+  <div class="columna">
+  <section class="tarjeta">
+    <h2>Mis trabajos</h2>
+    <ul id="trabajos" class="trabajos"><li class="nota">Cargando…</li></ul>
+  </section>
+
+  <section class="tarjeta">
+    <h2>Mis voces</h2>
+    <ul id="voces" class="trabajos"><li class="nota">Cargando…</li></ul>
+    <details id="nueva-voz" class="nueva-voz">
+      <summary class="boton sec">＋ Clonar mi voz</summary>
+      <form id="form-voz" class="formulario">
+        <p class="nota">Graba unos 20–30 segundos en un sitio silencioso, con el micrófono cerca. Empieza leyendo en voz alta la frase de verificación y después sigue hablando con naturalidad: cuéntate a ti mismo qué has hecho hoy, por ejemplo.</p>
+        <blockquote id="frase" class="frase">…</blockquote>
+        <label>Nombre de la voz <input name="nombre" maxlength="30" value="Mi voz" required></label>
+        <div class="grabadora">
+          <button type="button" class="boton" id="grabar">● Grabar</button>
+          <span id="crono" class="nota">0 s</span>
+          <audio id="escucha" controls hidden></audio>
+        </div>
+        <label class="nota">…o sube un archivo de audio (WAV, MP3, M4A, OGG; máx. 10 MB)
+          <input type="file" id="archivo-voz" accept="audio/*"></label>
+        <label class="check"><input type="checkbox" name="propia" value="1" required>
+          Es mi propia voz. Solo la usaré yo y acepto que los audios generados lleven una marca de agua de IA.</label>
+        <button class="boton" id="enviar-voz">Enviar voz</button>
+        <p class="error" id="error-voz" hidden></p>
+      </form>
+    </details>
+  </section>
+  </div>
+</div>
+<dialog id="dialogo"><video id="video" controls playsinline></video><form method="dialog"><button class="boton sec">Cerrar</button></form></dialog>
+<script src="{{ url_for('static', filename='panel.js') }}"></script>
+{% endblock %}
