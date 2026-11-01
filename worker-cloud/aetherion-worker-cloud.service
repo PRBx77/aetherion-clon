@@ -1,0 +1,22 @@
+[Unit]
+Description=Aetherion worker cloud (3D via OpenRouter+OpenSCAD)
+After=network-online.target aetherion-clon.service
+Wants=network-online.target
+
+[Service]
+User=aetherion-worker
+Group=aetherion-worker
+WorkingDirectory=/opt/aetherion-worker-cloud
+EnvironmentFile=/opt/aetherion-worker-cloud/.env
+ExecStart=/opt/aetherion-worker-cloud/venv/bin/python3 -u worker.py
+Restart=always
+RestartSec=5
+MemoryMax=512M
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+ReadWritePaths=/opt/aetherion-worker-cloud
+
+[Install]
+WantedBy=multi-user.target
